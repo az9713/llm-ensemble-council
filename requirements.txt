@@ -1,0 +1,10 @@
+# LLM Council on LangGraph. Tests run offline (StubChat + fake embeddings).
+langgraph>=0.2
+langchain>=0.3
+langchain-openai>=0.2
+langchain-anthropic>=0.2
+langchain-google-genai>=2.0
+langchain-huggingface>=0.1        # local doc-RAG embeddings (pulls torch); live only
+sentence-transformers>=3.0        # local embeddings backend; live only
+tiktoken>=0.7
+# Dev: pytest>=8

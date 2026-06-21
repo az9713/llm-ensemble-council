@@ -1,0 +1,205 @@
+## Core answer
+https://chatgpt.com/c/6a354ee1-1654-83e8-8f62-c3524403d950
+**No: fusing GPT + Claude + Gemini into a council does not automatically beat the best single model.** In this transcript, the council only clearly helped on **open-ended design** tasks. It lost on **trade-off** and **risk** questions, and factual questions were mostly saturated because strong models all got them right. The creator’s conclusion: a council is a **judgment tool**, not a calculator. 
+
+## What he built
+
+The architecture has three stages:
+
+| Stage                        | Function                                                                                                |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------- |
+| **1. Independent answering** | Multiple models answer the same prompt in parallel.                                                     |
+| **2. Blind peer ranking**    | Each model reviews anonymized answers and ranks them, so it cannot favor its own provider/model family. |
+| **3. Chairman synthesis**    | A final model synthesizes the answers, surfaces consensus and dissent, and produces the final answer.   |
+
+He then modified the vanilla “LLM council” idea in four ways:
+
+1. **Tally rankings into a real leaderboard**, not just vibes.
+2. **Assign roles**: skeptic, domain expert, contrarian, journalist, rigorous reasoner, red-teamer.
+3. **Force diversity of cognition**, instead of having six models produce the same generic answer.
+4. **Make the chairman preserve disagreement**, rather than averaging everything into a bland consensus. 
+
+The gateway layer is important operationally: one API key, many model providers, model swap by changing one string, shared dashboard, failover/rate-limit retry, and OpenAI-compatible interface. 
+
+## Benchmark setup
+
+He tested:
+
+* **Council final answer**
+* versus **each individual model alone**
+* judged by an **independent model not in the council**
+* with responses anonymized, shuffled, and format-controlled
+* across multiple question types
+
+The council only “won” if it beat **every single individual model**. That is a strict criterion. 
+
+## Result
+
+| Question type           | Council result | Interpretation                                        |
+| ----------------------- | -------------: | ----------------------------------------------------- |
+| **Factual / checkable** |   No advantage | Strong models already got the answer right.           |
+| **Trade-off questions** |           Lost | Council may blur priorities or over-average.          |
+| **Risk questions**      |           Lost | Synthesis may dilute sharp red-team warnings.         |
+| **Open-ended design**   |            Won | Diversity helps when there is no single right answer. |
+
+Most surprising detail: **the plain final answer beat the full verbose write-up every time**. That matters. A council can produce too much meta-output: consensus, dissent, confidence, rankings, commentary. The benchmark preferred concise synthesized answers. 
+
+## My read: why the council underperformed
+
+The failure mode is not that councils are useless. The failure mode is **naive ensemble averaging**.
+
+Traditional ensembles work when individual learners make **partly uncorrelated errors**. LLMs often do not. GPT, Claude, Gemini, DeepSeek, etc. are all trained on overlapping internet-scale corpora, optimized with similar RLHF/RLAIF pressures, and biased toward plausible, consensus-shaped prose. So six models may not be six independent minds. They may be six adjacent samples from the same civilization-scale prior.
+
+For open-ended design, that is still useful because idea diversity matters. For risk and trade-off analysis, it can hurt because the chairman may compress disagreement into a safe-sounding middle position.
+
+## When to use a model council
+
+Use a council when the task has these properties:
+
+| Use a council when…                               | Example                                                  |
+| ------------------------------------------------- | -------------------------------------------------------- |
+| There is no single right answer                   | product strategy, architecture design, market thesis     |
+| You want independent frames                       | “What am I missing?”                                     |
+| The stakes justify latency/cost                   | investment memo, health-system decision, security review |
+| Dissent is valuable                               | risk analysis, red-team review, legal/technical exposure |
+| You need synthesis from multiple cognitive styles | scientist + engineer + investor + skeptic                |
+
+Do **not** use it for:
+
+| Skip the council when…           | Better method                           |
+| -------------------------------- | --------------------------------------- |
+| Simple lookup                    | search / retrieval                      |
+| Factual answer with known source | RAG + citation                          |
+| Code syntax / API usage          | official docs + one strong coding model |
+| Low-latency UX                   | single fast workhorse model             |
+| Cheap high-volume production     | router + evals                          |
+| Math with checkable output       | solver/verifier, not council            |
+
+His phrasing is right: **“It’s a judgment call. It’s not a calculator.”** 
+
+## Better architecture than “council of models”
+
+For your own agent harness, I would not build “GPT + Claude + Gemini vote on everything.” I would build a **routing-and-escalation system**:
+
+```text
+User query
+   ↓
+Task classifier
+   ↓
+Is it factual/checkable?
+   ├─ yes → retrieval + verifier + one model
+   └─ no
+       ↓
+Is it high-stakes / ambiguous / strategic?
+       ├─ no → one strong workhorse model
+       └─ yes → council
+              ↓
+          specialist generation
+              ↓
+          adversarial critique
+              ↓
+          rubric-based judge
+              ↓
+          chairman synthesis
+              ↓
+          final answer + dissent + confidence
+```
+
+The key distinction:
+
+* **Council as default** = expensive theater.
+* **Council as escalation path** = useful cognition.
+
+## Council prompt skeleton
+
+A useful council should not ask models to “give opinions.” It should force structured artifacts.
+
+### 1. Generator prompt
+
+```text
+You are the {ROLE} in a multi-model council.
+
+Question:
+{USER_QUESTION}
+
+Produce:
+1. Your direct answer
+2. Key assumptions
+3. Strongest argument for your position
+4. Strongest argument against your position
+5. Failure modes
+6. What evidence would change your mind
+
+Do not mention other agents. Do not hedge generically.
+```
+
+### 2. Blind judge prompt
+
+```text
+You are judging anonymized answers to the same question.
+
+Question:
+{USER_QUESTION}
+
+Answers:
+{ANONYMIZED_ANSWERS}
+
+Rank the answers using this rubric:
+- Correctness / plausibility
+- Specificity
+- Awareness of constraints
+- Handling of trade-offs
+- Actionability
+- Failure-mode awareness
+
+Return:
+1. Ranking
+2. Score per answer, 1-10
+3. Best answer and why
+4. Fatal flaw in each weak answer
+```
+
+### 3. Chairman prompt
+
+```text
+You are the chairman synthesizer.
+
+Inputs:
+- User question
+- Candidate answers
+- Blind rankings
+- Judge comments
+
+Your job:
+1. Produce the best final answer.
+2. Preserve genuine dissent.
+3. Do not average away important minority warnings.
+4. Prefer concise output unless the user asks for full reasoning.
+5. State confidence: low / medium / high.
+6. State what would need verification.
+
+Output:
+- Final answer
+- Consensus
+- Dissent
+- Action recommendation
+- Confidence
+```
+
+## The deeper lesson
+
+The primitive is not “many models.” The primitive is **epistemic decomposition**.
+
+You want separate modules for:
+
+| Module            | Purpose                                    |
+| ----------------- | ------------------------------------------ |
+| **Generator**     | Produce candidate solution                 |
+| **Contrarian**    | Attack hidden assumptions                  |
+| **Domain expert** | Inject specialized priors                  |
+| **Red teamer**    | Surface downside / adversarial cases       |
+| **Judge**         | Apply explicit rubric                      |
+| **Synthesizer**   | Compress into decision-ready answer        |
+| **Verifier**      | Check factual claims against sources/tools |
+
+The models are interchangeable. The **workflow topology** is the durable asset.
