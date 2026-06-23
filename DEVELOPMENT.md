@@ -58,7 +58,7 @@ retrieve ─→ generate ─→ rank ─→ chairman
 | 2 | domain expert | `anthropic:claude-sonnet-4-6` | Anthropic |
 | 3 | contrarian | `google_genai:gemini-3.5-flash` | Google |
 | 4 | first-principles journalist | `openai:gpt-4o-mini` | OpenAI |
-| 5 | rigorous reasoner | `anthropic:claude-3-5-haiku-latest` | Anthropic |
+| 5 | rigorous reasoner | `anthropic:claude-haiku-4-5-20251001` | Anthropic |
 | 6 | red-teamer | `google_genai:gemini-3.1-flash-lite` | Google |
 | — | Chairman (synthesis) | `anthropic:claude-sonnet-4-6` | override `COUNCIL_CHAIRMAN` |
 | — | Judge (blind eval, not a seat) | `openai:gpt-4o` | override `COUNCIL_JUDGE` |

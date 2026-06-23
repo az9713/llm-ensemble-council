@@ -155,6 +155,7 @@ def build_council(
     k: int = 4,
     seed: int = 0,
     cost: Optional[CostMeter] = None,
+    chairman_model: Optional[str] = None,  # model string, for $ pricing of the chairman call
 ):
     cost = cost if cost is not None else CostMeter()
 
@@ -169,7 +170,7 @@ def build_council(
         for seat in seats:
             msgs = [("system", GEN_SYS.format(role=seat.role)), ("human", GEN_USER.format(q=q, ctx=ctx))]
             text, usage = call(seat.chat, msgs)
-            cost.record("generate", seat.role, usage)
+            cost.record("generate", seat.role, usage, model=seat.name)
             answers.append({"seat": seat.name, "role": seat.role, "text": text})
         return {"answers": answers}
 
@@ -181,7 +182,7 @@ def build_council(
         for seat in seats:  # each seat is also a judge
             msgs = [("system", RANK_SYS), ("human", RANK_USER.format(q=q, answers=block))]
             text, usage = call(seat.chat, msgs)
-            cost.record("rank", seat.role, usage)
+            cost.record("rank", seat.role, usage, model=seat.name)
             orders.append(parse_order(text, labels))
         scores = borda(orders, labels)
         leaderboard = [
@@ -202,7 +203,7 @@ def build_council(
         candidates = "\n\n".join(f"[Borda {e['borda']}] {e['text']}" for e in lb)
         msgs = [("system", CHAIR_SYS), ("human", CHAIR_USER.format(q=q, candidates=candidates))]
         text, usage = call(chairman_chat, msgs)
-        cost.record("chairman", "chairman", usage)
+        cost.record("chairman", "chairman", usage, model=chairman_model)
         return {"final": parse_final(text)}
 
     g = StateGraph(State)

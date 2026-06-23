@@ -5,12 +5,13 @@ stay independent and diverse. Offline (default): stub LLMs + real local embeddin
 `python -m council.demo live` (needs provider keys in .env).
 """
 import json
+import os
 import re
 import sys
 
 from .config import ROLES, chairman_model, load_env
 from .council import Seat, build_council, live_seats, run_council
-from .llm import CostMeter, StubChat, make_chat
+from .llm import BudgetExceeded, CostMeter, StubChat, make_chat
 from .rag import DocRAG, load_docs
 
 QUESTIONS = [
@@ -59,26 +60,37 @@ def main(live=False):
     load_env()
     rag = DocRAG().index(load_docs())  # real local embeddings; keyless
 
+    chair_model = None
     if live:
         seats = live_seats()
-        chairman = make_chat(chairman_model())
+        chair_model = chairman_model()
+        chairman = make_chat(chair_model)
     else:
         seats = _stub_seats()
         chairman = _stub_chairman()
 
+    budget = os.environ.get("COUNCIL_BUDGET_USD")  # $ cap across this session; unset = no cap
+    budget_usd = float(budget) if budget else None
+
     print(f"=== Council ({'LIVE' if live else 'OFFLINE stub LLMs + local embeddings'}), "
-          f"grounded in {len(load_docs())} project docs ===\n")
-    cost = CostMeter()
-    for i, q in enumerate(QUESTIONS, 1):
-        graph = build_council(seats, chairman, retrieve=rag.retrieve, cost=cost)
-        out = run_council(graph, q)
-        print(f"--- Q{i}: {q}")
-        print(f"  retrieved {len(out.get('recalled', []))} doc chunk(s) for grounding")
-        final = out["final"]
-        print(f"  ANSWER:    {final['answer']}")
-        print(f"  DISSENT:   {final['dissent']}")
-        print(f"  CONFIDENCE:{final['confidence']}\n")
-    print(f"=== cost: {cost.total_calls()} calls, {cost.total_tokens()} tokens ===")
+          f"grounded in {len(load_docs())} project docs"
+          + (f", budget ${budget_usd:.2f} ===" if budget_usd is not None else " ===") + "\n")
+    cost = CostMeter(budget_usd=budget_usd)
+    try:
+        for i, q in enumerate(QUESTIONS, 1):
+            graph = build_council(seats, chairman, retrieve=rag.retrieve, cost=cost,
+                                  chairman_model=chair_model)
+            out = run_council(graph, q)
+            print(f"--- Q{i}: {q}")
+            print(f"  retrieved {len(out.get('recalled', []))} doc chunk(s) for grounding")
+            final = out["final"]
+            print(f"  ANSWER:    {final['answer']}")
+            print(f"  DISSENT:   {final['dissent']}")
+            print(f"  CONFIDENCE:{final['confidence']}\n")
+    except BudgetExceeded as e:
+        print(f"\n!! ABORTED: {e} (no final answer for the in-flight question)\n")
+    usd = f", ${cost.cost_usd():.4f}" if budget_usd is not None else ""
+    print(f"=== cost: {cost.total_calls()} calls, {cost.total_tokens()} tokens{usd} ===")
 
 
 if __name__ == "__main__":

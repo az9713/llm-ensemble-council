@@ -17,6 +17,11 @@ def load_env(path: str = ".env") -> None:
             continue
         key, _, val = line.partition("=")
         os.environ.setdefault(key.strip(), val.strip().strip('"').strip("'"))
+    # langchain-google-genai authenticates via GOOGLE_API_KEY (else Google Cloud ADC); mirror
+    # our GEMINI_API_KEY so the google_genai seats use the same key the config already checks.
+    gem = os.environ.get("GEMINI_API_KEY")
+    if gem and not os.environ.get("GOOGLE_API_KEY"):
+        os.environ["GOOGLE_API_KEY"] = gem
 
 
 ROLES = [
@@ -34,7 +39,7 @@ DEFAULT_SEAT_MODELS = [
     "anthropic:claude-sonnet-4-6",
     "google_genai:gemini-3.5-flash",
     "openai:gpt-4o-mini",
-    "anthropic:claude-3-5-haiku-latest",
+    "anthropic:claude-haiku-4-5-20251001",
     "google_genai:gemini-3.1-flash-lite",
 ]
 
