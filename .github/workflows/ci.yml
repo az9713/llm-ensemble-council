@@ -27,4 +27,6 @@ jobs:
       - name: Lint
         run: ruff check .
       - name: Test
-        run: pytest -q
+        # `python -m pytest` (not bare `pytest`) puts the repo root on sys.path so the
+        # local `council` package imports without an install or conftest.py.
+        run: python -m pytest -q
