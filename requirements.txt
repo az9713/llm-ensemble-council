@@ -5,6 +5,6 @@ langchain-openai>=0.2
 langchain-anthropic>=0.2
 langchain-google-genai>=3.1.0   # <3.1 crashes on Gemini 3.x (Part.thought); verified on 4.2.5
 langchain-huggingface>=0.1        # local doc-RAG embeddings (pulls torch); live only
-sentence-transformers>=3.0        # local embeddings backend; live only
+sentence-transformers>=5.6.0        # local embeddings backend; live only
 tiktoken>=0.7
 # Dev: pytest>=8
