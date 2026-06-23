@@ -1,0 +1,42 @@
+name: Docs drift monitor
+# L4 — Galarza loop 2, agentic. Weekly, Claude compares docs against code and opens a
+# docs-drift Issue when they disagree. Subscription OAuth (no API billing).
+# NOTE: schedule/dispatch only — never fork/Dependabot PR events, which can't see the
+# CLAUDE_CODE_OAUTH_TOKEN secret.
+on:
+  schedule:
+    - cron: "7 13 * * 1"   # Mondays 13:07 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  docs-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history so Claude can diff recent changes
+      - uses: anthropics/claude-code-action@v1   # ponytail: pin to a full SHA for prod; Dependabot keeps it current
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: |
+            Audit this repo for documentation drift and keep the result actionable.
+
+            Read README.md and the key docs (HOW_IT_WORKS.md, DEVELOPMENT.md, docs/),
+            then inspect recent git history and the current tree. Look for code changes
+            (modules, public functions, CLI flags, config, output contracts) that the
+            docs no longer reflect.
+
+            If you find drift, open ONE GitHub issue with the `docs-drift` label, titled
+            "Docs drift: <today's date>", listing each mismatch with exact file/line refs
+            and a concise suggested fix. Before opening, check `gh issue list --label
+            docs-drift --state open` and update the existing open issue instead of making
+            a duplicate. Do NOT change product code. If everything is current, do nothing.
+          claude_args: |
+            --allowedTools "Read,Grep,Glob,Bash(git log:*),Bash(git diff:*),Bash(gh issue list:*),Bash(gh issue create:*),Bash(gh issue comment:*),Bash(gh issue edit:*)"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

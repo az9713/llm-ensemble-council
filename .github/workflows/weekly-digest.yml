@@ -1,0 +1,39 @@
+name: Weekly shipping digest
+# L5 — Galarza loops 3+4, agentic. Friday summary of what shipped / what's open / what's
+# stale, opened as a weekly-digest Issue. The solo-dev version of release review + prep.
+on:
+  schedule:
+    - cron: "11 17 * * 5"   # Fridays 17:11 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: anthropics/claude-code-action@v1   # ponytail: pin to a full SHA for prod
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: |
+            Produce a weekly shipping digest for this repo covering the last 7 days.
+
+            Use `gh` and git to gather: merged PRs (`gh pr list --state merged`), recent
+            commits, any new releases (`gh release list`), and still-open PRs/issues.
+            Then open ONE GitHub issue with the `weekly-digest` label, titled
+            "Weekly digest: <today's date>", with sections:
+            - Shipped this week (merged PRs / notable commits, with #refs)
+            - Still open (PRs and issues, flag anything stale > 14 days)
+            - Suggested next actions (concrete, prioritized)
+            If nothing happened this week, say so in one line in the issue.
+          claude_args: |
+            --allowedTools "Read,Grep,Glob,Bash(git log:*),Bash(gh pr list:*),Bash(gh release list:*),Bash(gh issue list:*),Bash(gh issue create:*)"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
