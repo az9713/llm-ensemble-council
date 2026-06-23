@@ -1,0 +1,17 @@
+name: Dependency review
+# L3b — blocks PRs that introduce dependencies with known vulnerabilities.
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high

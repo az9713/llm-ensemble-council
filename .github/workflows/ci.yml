@@ -1,0 +1,32 @@
+name: CI
+# L1 — lint + test on every push and PR. The green-check gate the other loops rely on.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      # ponytail: installs full requirements.txt incl. heavy live-only torch/sentence-transformers.
+      # Tests run offline; split a requirements-dev.txt if CI install time becomes annoying.
+      - run: pip install -r requirements.txt ruff pytest
+      - name: Lint
+        run: ruff check .
+      - name: Test
+        # `python -m pytest` (not bare `pytest`) puts the repo root on sys.path so the
+        # local `council` package imports without an install or conftest.py.
+        run: python -m pytest -q
