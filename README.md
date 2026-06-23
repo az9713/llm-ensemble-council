@@ -17,6 +17,8 @@ confounds is in [`EVAL_REPORT.md`](EVAL_REPORT.md); the architecture walkthrough
 
 ## Pipeline
 
+![LLM Council communication flow: a question is grounded via doc-RAG, fanned out to six independent role seats (3 labs × 2 models), peer-ranked blind by Borda, then synthesized by a chairman into a final answer with dissent; the blind judge sits outside the flow (eval only).](architecture.png)
+
 ```
 retrieve ─→ generate ─→ rank ─→ chairman
 (doc-RAG)   (parallel    (blind,  (synthesis:
