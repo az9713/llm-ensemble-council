@@ -29,7 +29,7 @@ def count_tokens(text: str) -> int:
 
 def make_chat(model_str: str, **kwargs):
     """Real chat model via LangChain. model_str like 'openai:gpt-4o',
-    'anthropic:claude-opus-4-8', 'google_genai:gemini-2.0-flash'."""
+    'anthropic:claude-sonnet-4-6', 'google_genai:gemini-3.5-flash'."""
     from langchain.chat_models import init_chat_model  # lazy: keeps tests light
 
     return init_chat_model(model_str, **kwargs)

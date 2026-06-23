@@ -50,6 +50,21 @@ retrieve ─→ generate ─→ rank ─→ chairman
 | `docs/` | sample project-doc corpus for RAG |
 | `tests/test_council.py` | offline suite (StubChat + fake embeddings) |
 
+**Default models** (`config.py`; 3 labs × 2 models = decorrelation. Change freely — one string = one model):
+
+| # | Role | Model | Lab |
+|---|---|---|---|
+| 1 | skeptic | `openai:gpt-4o` | OpenAI |
+| 2 | domain expert | `anthropic:claude-sonnet-4-6` | Anthropic |
+| 3 | contrarian | `google_genai:gemini-3.5-flash` | Google |
+| 4 | first-principles journalist | `openai:gpt-4o-mini` | OpenAI |
+| 5 | rigorous reasoner | `anthropic:claude-3-5-haiku-latest` | Anthropic |
+| 6 | red-teamer | `google_genai:gemini-3.1-flash-lite` | Google |
+| — | Chairman (synthesis) | `anthropic:claude-sonnet-4-6` | override `COUNCIL_CHAIRMAN` |
+| — | Judge (blind eval, not a seat) | `openai:gpt-4o` | override `COUNCIL_JUDGE` |
+
+New model IDs are construction-verified only (no keys at dev time); `resolve_model` falls back to an available provider.
+
 ## 4. Key decisions & rationale (don't silently undo these)
 
 - **Grounding = project documents, not the council's own prior output.** Feeding back prior

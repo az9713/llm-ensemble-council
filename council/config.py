@@ -31,11 +31,11 @@ ROLES = [
 # 6 seats across providers (different labs = the point of a council). Edit as needed.
 DEFAULT_SEAT_MODELS = [
     "openai:gpt-4o",
-    "anthropic:claude-opus-4-8",
-    "google_genai:gemini-2.0-flash",
+    "anthropic:claude-sonnet-4-6",
+    "google_genai:gemini-3.5-flash",
     "openai:gpt-4o-mini",
     "anthropic:claude-3-5-haiku-latest",
-    "google_genai:gemini-1.5-flash",
+    "google_genai:gemini-3.1-flash-lite",
 ]
 
 
@@ -66,7 +66,7 @@ def resolve_model(preferred: str) -> str:
 
 
 def chairman_model() -> str:
-    return resolve_model(os.environ.get("COUNCIL_CHAIRMAN", "anthropic:claude-opus-4-8"))
+    return resolve_model(os.environ.get("COUNCIL_CHAIRMAN", "anthropic:claude-sonnet-4-6"))
 
 
 def judge_model() -> str:
