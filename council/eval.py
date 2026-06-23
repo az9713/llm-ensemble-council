@@ -9,12 +9,13 @@ Run: `python -m council.eval`        (cost structure, offline, no keys)
      `python -m council.eval live`   (also runs quality with real models)
 """
 import json
+import os
 import re
 import sys
 
 from .config import chairman_model, judge_model, load_env
 from .council import Seat, anonymize, build_council, live_seats, parse_order, run_council
-from .llm import CostMeter, StubChat, call, make_chat
+from .llm import BudgetExceeded, CostMeter, StubChat, call, make_chat
 from .rag import DocRAG, load_docs
 
 
@@ -76,20 +77,24 @@ Answers:
 Return ONLY JSON: {{"order": [labels best-to-worst]}}."""
 
 
-def quality(seats, chairman, judge, retrieve=None):
-    """Blind-judge council vs each single model. Council 'wins' iff it beats every single."""
+def quality(seats, chairman, judge, retrieve=None, cost=None, chair_model=None, judge_name=None):
+    """Blind-judge council vs each single model. Council 'wins' iff it beats every single.
+    All calls (council + solo + judge) flow through `cost` so a budget cap covers the eval."""
+    cost = cost if cost is not None else CostMeter()
     results = []
     for item in QUESTION_SET:
         q = item["q"]
-        graph = build_council(seats, chairman, retrieve=retrieve)
+        graph = build_council(seats, chairman, retrieve=retrieve, cost=cost, chairman_model=chair_model)
         council_answer = run_council(graph, q)["final"]["answer"]
         candidates = [("council", council_answer)]
         for s in seats:
-            text, _ = call(s.chat, [("system", f"You are a {s.role}."), ("human", q)])
+            text, usage = call(s.chat, [("system", f"You are a {s.role}."), ("human", q)])
+            cost.record("single", s.role, usage, model=s.name)
             candidates.append((s.name, text))
         labels, label2idx = anonymize(len(candidates), seed=0)
         block = "\n\n".join(f"{lab}:\n{candidates[label2idx[lab]][1]}" for lab in labels)
-        order_text, _ = call(judge, [("system", JUDGE_SYS), ("human", JUDGE_USER.format(q=q, answers=block))])
+        order_text, usage = call(judge, [("system", JUDGE_SYS), ("human", JUDGE_USER.format(q=q, answers=block))])
+        cost.record("judge", "judge", usage, model=judge_name)
         order = parse_order(order_text, labels)
         ranked = [candidates[label2idx[lab]][0] for lab in order]
         rank = ranked.index("council")
@@ -112,10 +117,20 @@ def main(live=False):
     print_cost_structure(cost_structure())
     if live:
         seats = live_seats()
-        chairman = make_chat(chairman_model())
-        judge = make_chat(judge_model())
+        chair_model = chairman_model()
+        chairman = make_chat(chair_model)
+        judge_name = judge_model()
+        judge = make_chat(judge_name)
         rag = DocRAG().index(load_docs())
-        print_quality(quality(seats, chairman, judge, retrieve=rag.retrieve))
+        budget = os.environ.get("COUNCIL_BUDGET_USD")  # same cap as a council run
+        cost = CostMeter(budget_usd=float(budget) if budget else None)
+        try:
+            print_quality(quality(seats, chairman, judge, retrieve=rag.retrieve, cost=cost,
+                                  chair_model=chair_model, judge_name=judge_name))
+        except BudgetExceeded as e:
+            print(f"\n!! Quality eval ABORTED: {e}")
+        usd = f", ${cost.cost_usd():.4f}" if budget else ""
+        print(f"\n  eval cost: {cost.total_calls()} calls, {cost.total_tokens()} tokens{usd}")
     else:
         print("\n=== 2. Quality ===\n  (skipped — needs provider keys; run `python -m council.eval live`)")
 

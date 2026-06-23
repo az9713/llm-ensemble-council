@@ -1,4 +1,4 @@
-# llm-council
+# llm-ensemble-council
 
 A multi-model **LLM Council** on LangGraph: fan a question out to several models in distinct
 roles → blind anonymized peer-ranking (Borda) → a chairman synthesizes one answer with
@@ -8,6 +8,12 @@ Independent codebase (no coilmem, no shared package). Design context:
 [`council-coilmem-decision.md`](council-coilmem-decision.md). Source sketch: an
 ensemble-of-LLMs ("council") — wins over the best single model mainly on open-ended design;
 *"a judgment call, not a calculator."*
+
+**Does it actually work?** That question — the subject of the video
+[*Does LLM Council/Fusion Actually Work?*](https://www.youtube.com/watch?v=oalFPYvsx9Y&t=123s) —
+is tested here, not assumed. A live blind-judge evaluation with an honest critique of its
+confounds is in [`EVAL_REPORT.md`](EVAL_REPORT.md); the architecture walkthrough is in
+[`HOW_IT_WORKS.md`](HOW_IT_WORKS.md).
 
 ## Pipeline
 
