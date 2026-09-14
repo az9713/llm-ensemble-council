@@ -14,10 +14,16 @@ import re
 import sys
 
 from .config import chairman_model, judge_model, load_env
-from .council import Seat, anonymize, build_council, live_seats, parse_order, run_council
+from .council import (
+    Seat,
+    anonymize,
+    build_council,
+    live_seats,
+    parse_order,
+    run_council,
+)
 from .llm import BudgetExceeded, CostMeter, StubChat, call, make_chat
 from .rag import DocRAG, load_docs
-
 
 # --- 1. cost structure --------------------------------------------------------
 

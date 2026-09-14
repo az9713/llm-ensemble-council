@@ -5,7 +5,6 @@ offline (pass a deterministic fake); the live default is local all-MiniLM-L6-v2 
 via langchain-huggingface). Grounding the seats in source docs (vs the council's own prior
 answers) gives consistency without anchoring away the council's diversity.
 """
-from typing import Optional
 
 
 class DocRAG:
@@ -34,7 +33,7 @@ class DocRAG:
         return [d.page_content for d in self._store.similarity_search(query, k=k)]
 
 
-def load_docs(docs_dir: Optional[str] = None):
+def load_docs(docs_dir: str | None = None):
     """Read all *.md / *.txt under docs_dir (default: ../docs) as a doc corpus."""
     from pathlib import Path
 

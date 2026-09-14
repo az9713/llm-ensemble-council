@@ -10,7 +10,6 @@
 - `CostMeter` accumulates tokens + call counts per stage for the eval.
 """
 from dataclasses import dataclass, field
-from typing import Optional
 
 _ENC = None
 
@@ -110,12 +109,12 @@ class StubChat:
 @dataclass
 class CostMeter:
     rows: list = field(default_factory=list)  # (stage, role, in_tok, out_tok, calls)
-    budget_usd: Optional[float] = None        # None = no cap (offline/tests)
+    budget_usd: float | None = None        # None = no cap (offline/tests)
     prices: dict = field(default_factory=lambda: dict(PRICES))
     default_price: tuple = DEFAULT_PRICE
     usd: float = 0.0                          # running spend; priced when model is known
 
-    def record(self, stage: str, role: str, usage: Usage, model: Optional[str] = None, calls: int = 1):
+    def record(self, stage: str, role: str, usage: Usage, model: str | None = None, calls: int = 1):
         self.rows.append((stage, role, usage.input_tokens, usage.output_tokens, calls))
         if model is not None:
             in_rate, out_rate = self.prices.get(model, self.default_price)
