@@ -13,8 +13,9 @@ Seats/chairman are injected, so tests pass StubChat and live runs pass real mode
 import json
 import random
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, Optional, TypedDict
+from typing import TypedDict
 
 from langgraph.graph import END, START, StateGraph
 
@@ -99,16 +100,15 @@ def borda(orders, labels) -> dict:
 
 def _extract_json(text: str):
     """Best-effort: parse the first JSON object/array in model output."""
-    try:
-        return json.loads(text)
-    except Exception:
-        pass
+    candidates = [text]
     m = re.search(r"(\{.*\}|\[.*\])", text or "", re.DOTALL)
     if m:
+        candidates.append(m.group(1))
+    for candidate in candidates:
         try:
-            return json.loads(m.group(1))
-        except Exception:
-            return None
+            return json.loads(candidate)
+        except (ValueError, TypeError):
+            continue
     return None
 
 
@@ -151,11 +151,11 @@ def parse_final(text: str) -> dict:
 def build_council(
     seats: list,
     chairman_chat,
-    retrieve: Optional[Callable] = None,
+    retrieve: Callable | None = None,
     k: int = 4,
     seed: int = 0,
-    cost: Optional[CostMeter] = None,
-    chairman_model: Optional[str] = None,  # model string, for $ pricing of the chairman call
+    cost: CostMeter | None = None,
+    chairman_model: str | None = None,  # model string, for $ pricing of the chairman call
 ):
     cost = cost if cost is not None else CostMeter()
 
