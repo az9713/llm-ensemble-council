@@ -13,7 +13,14 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from council import eval as cev
 from council import llm
-from council.council import Seat, anonymize, borda, build_council, parse_order, run_council
+from council.council import (
+    Seat,
+    anonymize,
+    borda,
+    build_council,
+    parse_order,
+    run_council,
+)
 from council.rag import DocRAG
 
 
